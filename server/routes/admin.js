@@ -3,8 +3,11 @@ const jwt=require('jsonwebtoken');
 const{authenticateJwt,jwtPass}=require('../middleware/authentication');  //object destructuring
 const {user,admin,course,video,comment}=require('../DB/db');
 const multer=require('multer');
-const router=express.Router();
 const path = require('path');
+require('dotenv').config();
+
+
+const router=express.Router();
 
 // Admin routes
 
@@ -228,5 +231,7 @@ router.get('/comments',authenticateJwt,async(req,res)=>{
     res.json({message:'cannot post comment',error:err})
   }
 })
+
+
 
   module.exports=router

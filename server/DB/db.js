@@ -9,7 +9,7 @@ const admin_schema=new mongoose.Schema({
 const course_schema=new mongoose.Schema({
     title: String, 
     description:String, 
-    price: String, 
+    price: Number, 
     imageLink:String,
     published:Boolean,
     courseAdmin:String

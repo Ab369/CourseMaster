@@ -91,7 +91,30 @@ return(
 
 function CourseCard({course}){
   const navigate=useNavigate();
-
+ 
+  //check if course bought or not
+  const [courseAlreadyPurchsed,setCourseAlreadyPurchased]=useState(false);
+   
+  //for setting alreadyPurchased to make view button visible for purchased courses
+  useEffect(()=>{
+          fetch(server+'/user/purchasedCourses',{
+              method:'GET',
+              headers:{
+                  'Authorization':'Bearer '+localStorage.getItem('token')
+              }
+          }).then((res)=>{
+              res.json().then((data)=>
+              {
+                    if (data.purchased.find((purchasedCourse) => purchasedCourse._id === course._id)) {
+                      setCourseAlreadyPurchased(true);
+                    }  
+              })
+          }).catch((err)=>{
+            console.log('error in courses',err);
+          })
+},[])
+      
+      
   return(
     <div className='courseCard border-2  p-2 rounded-xl bg-gradient-to-b from-orange-100 via-25% via-orange-200 to-80% mb-4 hover:bg-gradient-to-t'>
 
@@ -116,10 +139,14 @@ function CourseCard({course}){
         </div>
       </CardBody>
        
-      <div className="btns px-2 gap-2">   
-         <button className='course-card-btns bg-green-600 ' onClick={()=>{
+       {/* BUY/VIEW button */}
+      <div className="btns px-2 gap-2">
+           
+          {courseAlreadyPurchsed? (<button className='course-card-btns bg-blue-600 ' onClick={()=>{
+          navigate('/course/'+course._id)
+         }}><span class="relative z-10 flex items-center gap-1 md:text-lg text-md " >VIEW</span></button>) : (<button className='course-card-btns bg-green-600 ' onClick={()=>{
           navigate('/buyCourse/'+course._id)
-         }}><span class="relative z-10 flex items-center gap-1 md:text-lg text-md " >BUY</span></button>
+         }}><span class="relative z-10 flex items-center gap-1 md:text-lg text-md " >BUY</span></button>)}
       </div>
     </Card>
     </div>

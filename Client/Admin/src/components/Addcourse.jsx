@@ -26,7 +26,7 @@ function Addcourse()
          <input type="text" className='input' placeholder='Put Image Link' onChange={(e)=>{
           setImageLink(e.target.value)
          }}/>
-          <input type="text" className='input' placeholder='Course Price' onChange={(e)=>{
+          <input type="number" className='input' placeholder='Course Price' onChange={(e)=>{
             setPrice(e.target.value)
           }} />
 

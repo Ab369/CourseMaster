@@ -2,6 +2,9 @@ const express=require('express');
 const jwt=require('jsonwebtoken');
 const {authenticateJwt,jwtPass}=require('../middleware/authentication');
 const {user,admin,course}=require('../DB/db');
+const Razorpay=require('razorpay');
+require('dotenv').config();
+const crypto=require('crypto')
 
 const router=express.Router();
 
@@ -80,36 +83,10 @@ router.post('/signup',async (req, res) => {
     })
   })
 
-  //purchase course
-  router.post('/courses/:courseId',authenticateJwt, async(req, res) => {
-    
-        const input_courseId=req.params.courseId;
-        // Getting course
-        const course_to_be_purchased = await course.findById(input_courseId);
+ 
   
-        if (!course_to_be_purchased) {
-          return res.status(404).send('Course not found');
-        }
-        
-        //else
-        const user_detail = await user.findOne({ username: req.user.username });  //got username by jwt
-  
-        if (!user_detail) {
-          return res.status(404).send('User not found');
-        }
-        
-        console.log(user_detail);
-  
-      //TODO: avoid purchase of course if already purchased
-        // if(user_detail.purchased_courses.some(ele=>ele===input_courseId))
-        //   return res.send('course already purchased');
-  
-        user_detail.purchased_courses.push(course_to_be_purchased);
-        await user_detail.save();
-        res.send('course purchased succesfully');
-      });
-  
-  
+
+
   router.get('/purchasedCourses',authenticateJwt,async(req, res) => {
      // logic to view purchased courses
      
@@ -152,5 +129,78 @@ router.post('/signup',async (req, res) => {
    }
     
   });
+
+
+  //payment gateway integration
+
+//creating order
+router.post('/order',async(req,res)=>{
+  //initialising razorpay instance
+  const razorpay=new Razorpay({
+    key_id:process.env.RAZORPAY_KEY_ID,
+    key_secret:process.env.RAZORPAY_SECRET
+  });
+  //setting options
+  const options={
+    amount:req.body.amount*100,
+    currency:'INR',
+    receipt:`receipt_${new Date().getTime()}`,
+  };
+  try{
+    const response=await razorpay.orders.create(options)
+    res.json(response)
+  }catch(err){
+    res.status(400).json({message:'order not created!',error:err})
+  }
+})
+
+// for verfiying payment
+router.post('/verifyPayment',async(req,res)=>{
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+  const keySecret = process.env.RAZORPAY_SECRET; // Replace with your Key Secret
+  const body = razorpay_order_id + "|" + razorpay_payment_id; //razorpay convention
+
+  const expectedSignature = crypto
+    .createHmac('sha256', keySecret)
+    .update(body.toString())
+    .digest('hex');
+
+  if (expectedSignature === razorpay_signature) {
+    res.status(200).json({ message: 'Payment verified successfully!',verified:true });
+  } else {
+    res.status(400).json({ error: 'Invalid payment signature!',verfied:false });
+  }
+})
+
+ //purchase course-->will be called once payment verified
+ router.post('/courses/:courseId',authenticateJwt, async(req, res) => {
+    
+  const input_courseId=req.params.courseId;
+  // Getting course
+  const course_to_be_purchased = await course.findById(input_courseId);
+
+  if (!course_to_be_purchased) {
+    return res.status(404).json({message:'Course not found'});
+  }
+  
+  //else
+  const user_detail = await user.findOne({ username: req.user.username });  //got username by jwt
+
+  if (!user_detail) {
+    return res.status(404).json({message:'User not found'});
+  }
+  
+  console.log(user_detail);
+
+//TODO: avoid purchase of course if already purchased
+  // if(user_detail.purchased_courses.some(ele=>ele===input_courseId))
+  //   return res.send('course already purchased');
+
+  user_detail.purchased_courses.push(course_to_be_purchased);
+  await user_detail.save();
+  res.json({message:'course purchased succesfully'});
+});
+
 
   module.exports=router
