@@ -103,7 +103,7 @@ function Coursecomp(props)
           });
           const verifyResult = await verifyResponse.json();
          //  alert(verifyResult.message);
-          alert(verifyResult.verified);
+          // alert(verifyResult.verified);
 
 
           if(verifyResult.verified) //call save to db route
